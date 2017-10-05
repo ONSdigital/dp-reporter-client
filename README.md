@@ -1,21 +1,29 @@
-dp-repo-template
+dp-reporter-client
 ================
 
-A template git repository for DP repos:
-
-* Standardised files for CHANGELOG, CONTRIBUTING, LICENSE and README
-* Default template for GitHub pull requests
+A client for sending report events to the dp-import-reporter
 
 ### Getting started
+##### Create a new client
+```
+	p := &KafkaProducer{
+	    //...Implementation of interface
+	}
+	cli, err := client.NewReporterClient(p, "MyService")
+	if err != nil {
+		//...handle error
+	}
+```
+##### Report an error event
+```
+cli.ReportError("instance-123", "unexpected http response status", err, log.Data{"key": "value")
+```
 
-After creating a new repository on GitHub, use these commands to initialise
-it using this repository as a template:
-
-* `git clone git@github.com:ONSdigital/dp-repo-template dp-new-repo-name`
-* `cd dp-new-repo-name`
-* `git remote set-url origin git@github.com:ONSdigital/dp-new-repo-name`
-
-Remember to update the [README](README.md) and [CHANGELOG](CHANGELOG.md) files.
+##### Close the client as part of your application shutdown
+```
+	ctx, _ := context.WithTimeout(context.Background(), time.Second * 5)
+	cli.Close(ctx)
+```
 
 ### Configuration
 
