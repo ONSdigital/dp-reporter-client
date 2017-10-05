@@ -7,6 +7,7 @@ import (
 	"github.com/ONSdigital/dp-reporter-client/model"
 	"github.com/ONSdigital/dp-reporter-client/schema"
 	"github.com/ONSdigital/dp-reporter-client/client/clienttest"
+	"github.com/ONSdigital/go-ns/log"
 )
 
 var (
@@ -29,7 +30,7 @@ func TestHandler_Handle(t *testing.T) {
 		target := &ReporterClient{kafkaProducer: kafkaProducer, serviceName: "Bob", marshal: marshalFunc}
 
 		Convey("When ReportError is called with valid parameters", func() {
-			err := target.ReportError(testInstanceID, errContext, cause, nil)
+			err := target.ReportError(testInstanceID, errContext, cause, log.Data{"KEY": "value"})
 
 			avroBytes := <-output
 
