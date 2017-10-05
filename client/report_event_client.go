@@ -50,7 +50,7 @@ func NewReporterClient(kafkaProducer KafkaProducer, serviceName string) (*Report
 }
 
 // ReportError send an error report to the import-reporter
-func (c ReporterClient) ReportError(instanceID string, eventContext string, err error, data map[string]interface{}) error {
+func (c ReporterClient) ReportError(instanceID string, eventContext string, err error, data log.Data) error {
 	log.ErrorC(eventContext, err, data)
 
 	if len(instanceID) == 0 {
