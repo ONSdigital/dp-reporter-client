@@ -83,7 +83,7 @@ func (c *ReporterClient) ReportError(instanceID string, eventContext string, err
 }
 
 // Close properly closes the ReporterClient
-func (c *ReporterClient) Close(ctx context.Context) error {
+func (c ReporterClient) Close(ctx context.Context) error {
 	if ctx == nil {
 		ctx, _ = context.WithTimeout(context.Background(), time.Second*defaultTimeout)
 	}
