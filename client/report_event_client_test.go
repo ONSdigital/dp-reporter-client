@@ -7,8 +7,6 @@ import (
 	"github.com/ONSdigital/dp-reporter-client/model"
 	"github.com/ONSdigital/dp-reporter-client/schema"
 	"github.com/ONSdigital/dp-reporter-client/client/clienttest"
-	"context"
-	"time"
 )
 
 var (
@@ -152,71 +150,6 @@ func TestNewReporterClient(t *testing.T) {
 
 			Convey("And no error is returned", func() {
 				So(err, ShouldBeNil)
-			})
-		})
-	})
-}
-
-func TestReporterClient_Close(t *testing.T) {
-	Convey("Given a valid context", t, func() {
-		ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
-		producer := clienttest.NewKafkaProducerMock(nil, func(ctx context.Context) error {
-			return nil
-		})
-		cli, _ := NewReporterClient(producer, "serviceName")
-
-		Convey("When Close is called", func() {
-			err := cli.Close(ctx)
-
-			Convey("Then no error is returned", func() {
-				So(err, ShouldBeNil)
-			})
-
-			Convey("And kafkaProducer.Close is called once with the expected parameters", func() {
-				So(len(producer.CloseCalls()), ShouldEqual, 1)
-				So(producer.CloseCalls()[0], ShouldEqual, ctx)
-			})
-		})
-	})
-
-	Convey("Given context is nil", t, func() {
-		var ctx context.Context = nil
-		producer := clienttest.NewKafkaProducerMock(nil, func(ctx context.Context) error {
-			return nil
-		})
-		cli, _ := NewReporterClient(producer, "serviceName")
-
-		Convey("when close is called", func() {
-			err := cli.Close(ctx)
-
-			Convey("then no error is returned", func() {
-				So(err, ShouldBeNil)
-			})
-
-			Convey("and kafkaProducer.Close is called once with the expected parameters", func() {
-				So(len(producer.CloseCalls()), ShouldEqual, 1)
-				So(producer.CloseCalls()[0], ShouldNotBeNil)
-			})
-		})
-	})
-
-	Convey("Given kafkaProducer.Close returns an error", t, func() {
-		var ctx context.Context = nil
-		producer := clienttest.NewKafkaProducerMock(nil, func(ctx context.Context) error {
-			return errors.New("kafkaProducer busted")
-		})
-		cli, _ := NewReporterClient(producer, "serviceName")
-
-		Convey("when close is called", func() {
-			err := cli.Close(ctx)
-
-			Convey("then the expected error is returned", func() {
-				So(err, ShouldResemble, errors.New("kafkaProducer busted"))
-			})
-
-			Convey("and kafkaProducer.Close is called once with the expected parameters", func() {
-				So(len(producer.CloseCalls()), ShouldEqual, 1)
-				So(producer.CloseCalls()[0], ShouldNotBeNil)
 			})
 		})
 	})
