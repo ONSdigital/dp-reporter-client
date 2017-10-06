@@ -11,13 +11,9 @@ service name should be the name of your service - as this is where the error eve
 responsibility of the caller to gracefully close the KafkaProducer and handle any error it returns.
 ```go
 	var p KafkaProducer
-	...
-
 	cli, err := client.NewReporterClient(p, "MyService")
 	if err != nil {
- 
 		//...handle error
- 
 	}
 ```
 ##### Report an error event
@@ -25,19 +21,11 @@ To report an error event you __MUST__ provide an __instanceID__ and an __error c
 both parameters in order to update the instance. If neither are provided the client will not attempt to report the 
 event and will return an error. Additionally you can provide the error causing the event the and any additional 
 logging data.
+```go
+    if err := cli.ReportError("instance-123", "unexpected http response status", err, log.Data{"expected": 200, "actual": 500); err != nil {
+        //...handle error
+    }
 ```
-cli.ReportError("instance-123", "unexpected http response status", err, log.Data{"key": "value")
-```
-
-### Configuration
-
-An overview of the configuration options available, either as a table of
-environment variables, or with a link to a configuration guide.
-
-| Environment variable | Default | Description
-| -------------------- | ------- | -----------
-| BIND_ADDR            | :8080   | The host and port to bind to
-
 ### Contributing
 
 See [CONTRIBUTING](CONTRIBUTING.md) for details.

@@ -21,19 +21,19 @@ func ReportErrorFunc(err error) func(instanceID string, errContext string, err e
 
 // NewReporterClientMock create a new ReporterClientMock
 // reportErrorFunc enables you to customise the result of ReportError func to meet the needs of your test case
-func NewReporterClientMock(reportErrorFunc func(string, string, error, log.Data) error) *reporterClientMock {
-	return &reporterClientMock{
+func NewReporterClientMock(reportErrorFunc func(string, string, error, log.Data) error) *ReporterClientMock {
+	return &ReporterClientMock{
 		reportErrorFunc: reportErrorFunc,
 		params:          make([]ClientParams, 0),
 	}
 }
 
-type reporterClientMock struct {
+type ReporterClientMock struct {
 	params          []ClientParams
 	reportErrorFunc func(string, string, error, log.Data) error
 }
 
-func (m *reporterClientMock) ReportError(instanceID string, errContext string, err error, data log.Data) error {
+func (m *ReporterClientMock) ReportError(instanceID string, errContext string, err error, data log.Data) error {
 	m.params = append(m.params, ClientParams{
 		InstanceID: instanceID,
 		ErrContext: errContext,
@@ -44,6 +44,6 @@ func (m *reporterClientMock) ReportError(instanceID string, errContext string, e
 }
 
 // ReportErrorCalls return a slice of the ClientParams passed into each invocation of ReportError
-func (m *reporterClientMock) ReportErrorCalls() []ClientParams {
+func (m *ReporterClientMock) ReportErrorCalls() []ClientParams {
 	return m.params
 }
