@@ -28,6 +28,13 @@ type KafkaProducer interface {
 
 type marshalFunc func(s interface{}) ([]byte, error)
 
+// ErrorReporter is the interface that wraps the ReportError method.
+// instanceID and errContent are required parameters. If neither is provided or there is any error while attemptin to
+// report the event then an error is retuned which the caller can handle as they see fit.
+type ErrorReporter interface {
+	ReportError(instanceID string, errContext string, err error, data log.Data) error
+}
+
 // ReporterClient a client for sending error reports to the import-reporter
 type ReporterClient struct {
 	kafkaProducer KafkaProducer
