@@ -1,17 +1,17 @@
 package client
 
 import (
-	"github.com/ONSdigital/go-ns/log"
-	"fmt"
-	"github.com/ONSdigital/dp-reporter-client/model"
 	"errors"
-	"context"
+	"fmt"
+
+	"github.com/ONSdigital/dp-reporter-client/model"
 	"github.com/ONSdigital/dp-reporter-client/schema"
-	"time"
+	"github.com/ONSdigital/go-ns/log"
 )
 
 const (
-	instanceEmpty    = "cannot send reportEvent as instanceID is empty"
+	instanceEmpty    = "cannot ReportError, instanceID is a required field but was empty"
+	contextEmpty     = "cannot ReportError, errContext is a required field but was empty"
 	sendingEvent     = "sending reportEvent for application error"
 	failedToMarshal  = "failed to marshal reportEvent to avro"
 	eventMessageFMT  = "%s: %s"
@@ -19,18 +19,16 @@ const (
 	kafkaProducerNil = "cannot create new reporter client as kafkaProducer is nil"
 	eventTypeErr     = "error"
 	reportEventKey   = "reportEvent"
-	defaultTimeout   = 10
 )
 
 // KafkaProducer interface of the go-ns kafka.Producer
 type KafkaProducer interface {
 	Output() chan []byte
-	Close(ctx context.Context) (err error)
 }
 
 type marshalFunc func(s interface{}) ([]byte, error)
 
-//ReporterClient a client for sending error reports to the import-reporte
+// ReporterClient a client for sending error reports to the import-reporter
 type ReporterClient struct {
 	kafkaProducer KafkaProducer
 	marshal       marshalFunc
@@ -54,17 +52,19 @@ func NewReporterClient(kafkaProducer KafkaProducer, serviceName string) (*Report
 }
 
 // ReportError send an error report to the import-reporter
-func (c *ReporterClient) ReportError(instanceID string, eventContext string, err error, data log.Data) error {
-	log.ErrorC(eventContext, err, data)
-
+func (c ReporterClient) ReportError(instanceID string, errContext string, err error, data log.Data) error {
 	if len(instanceID) == 0 {
 		log.Info(instanceEmpty, nil)
-		return nil
+		return errors.New(instanceEmpty)
+	}
+	if len(errContext) == 0 {
+		log.Info(contextEmpty, nil)
+		return errors.New(contextEmpty)
 	}
 
 	reportEvent := &model.ReportEvent{
 		InstanceID:  instanceID,
-		EventMsg:    eventMsg(eventContext, err),
+		EventMsg:    fmt.Sprintf(eventMessageFMT, errContext, err.Error()),
 		ServiceName: c.serviceName,
 		EventType:   eventTypeErr,
 	}
@@ -80,19 +80,4 @@ func (c *ReporterClient) ReportError(instanceID string, eventContext string, err
 
 	c.kafkaProducer.Output() <- avroBytes
 	return nil
-}
-
-// Close properly closes the ReporterClient
-func (c *ReporterClient) Close(ctx context.Context) error {
-	if ctx == nil {
-		ctx, _ = context.WithTimeout(context.Background(), time.Second*defaultTimeout)
-	}
-	if _, ok := ctx.Deadline(); !ok {
-		ctx, _ = context.WithTimeout(ctx, time.Second*defaultTimeout)
-	}
-	return c.kafkaProducer.Close(ctx)
-}
-
-func eventMsg(prefix string, err error) string {
-	return fmt.Sprintf(eventMessageFMT, prefix, err.Error())
 }

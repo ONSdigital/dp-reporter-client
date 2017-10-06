@@ -1,26 +1,28 @@
 package client
 
 import (
-	"testing"
-	. "github.com/smartystreets/goconvey/convey"
 	"errors"
+	"testing"
+
+	"fmt"
+
+	"github.com/ONSdigital/dp-reporter-client/client/clienttest"
 	"github.com/ONSdigital/dp-reporter-client/model"
 	"github.com/ONSdigital/dp-reporter-client/schema"
-	"github.com/ONSdigital/dp-reporter-client/client/clienttest"
-	"context"
-	"time"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 var (
 	testInstanceID = "666"
-	cause          = errors.New("Flubba Wubba Dub Dub")
+	cause          = errors.New("flubba wubba dub dub")
 	errContext     = "Ricky Ticky Tic Tac"
 
 	expectedReportEvent = &model.ReportEvent{
 		InstanceID:  testInstanceID,
 		EventType:   "error",
 		ServiceName: "Bob",
-		EventMsg:    eventMsg(errContext, cause),
+		EventMsg:    fmt.Sprintf(eventMessageFMT, errContext, cause.Error()),
 	}
 )
 
@@ -93,8 +95,32 @@ func TestHandler_HandleInstanceIDEmpty(t *testing.T) {
 		Convey("When ReportError is called with an empty instanceID", func() {
 			err := target.ReportError("", errContext, cause, nil)
 
-			Convey("Then no error is returned", func() {
-				So(err, ShouldBeNil)
+			Convey("Then the expected error is returned", func() {
+				So(err, ShouldResemble, errors.New(instanceEmpty))
+			})
+
+			Convey("And marshal is never called", func() {
+				So(len(marshalParams), ShouldEqual, 0)
+			})
+
+			Convey("And kafkaProducer.Output is never called", func() {
+				So(kafkaProducer.OutputCalls(), ShouldEqual, 0)
+			})
+		})
+	})
+}
+
+func TestHandler_HandleErrContextEmpty(t *testing.T) {
+	Convey("Given ReporterClient has been configured correctly", t, func() {
+		marshalParams := make([]interface{}, 0)
+		_, kafkaProducer, marshalFunc := setup(&marshalParams, schema.ReportEventSchema.Marshal)
+		target := &ReporterClient{kafkaProducer: kafkaProducer, serviceName: "Bob", marshal: marshalFunc}
+
+		Convey("When ReportError is called with an empty errContext", func() {
+			err := target.ReportError(testInstanceID, "", cause, nil)
+
+			Convey("Then the expected error is returned", func() {
+				So(err, ShouldResemble, errors.New(contextEmpty))
 			})
 
 			Convey("And marshal is never called", func() {
@@ -157,74 +183,9 @@ func TestNewReporterClient(t *testing.T) {
 	})
 }
 
-func TestReporterClient_Close(t *testing.T) {
-	Convey("Given a valid context", t, func() {
-		ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
-		producer := clienttest.NewKafkaProducerMock(nil, func(ctx context.Context) error {
-			return nil
-		})
-		cli, _ := NewReporterClient(producer, "serviceName")
-
-		Convey("When Close is called", func() {
-			err := cli.Close(ctx)
-
-			Convey("Then no error is returned", func() {
-				So(err, ShouldBeNil)
-			})
-
-			Convey("And kafkaProducer.Close is called once with the expected parameters", func() {
-				So(len(producer.CloseCalls()), ShouldEqual, 1)
-				So(producer.CloseCalls()[0], ShouldEqual, ctx)
-			})
-		})
-	})
-
-	Convey("Given context is nil", t, func() {
-		var ctx context.Context = nil
-		producer := clienttest.NewKafkaProducerMock(nil, func(ctx context.Context) error {
-			return nil
-		})
-		cli, _ := NewReporterClient(producer, "serviceName")
-
-		Convey("when close is called", func() {
-			err := cli.Close(ctx)
-
-			Convey("then no error is returned", func() {
-				So(err, ShouldBeNil)
-			})
-
-			Convey("and kafkaProducer.Close is called once with the expected parameters", func() {
-				So(len(producer.CloseCalls()), ShouldEqual, 1)
-				So(producer.CloseCalls()[0], ShouldNotBeNil)
-			})
-		})
-	})
-
-	Convey("Given kafkaProducer.Close returns an error", t, func() {
-		var ctx context.Context = nil
-		producer := clienttest.NewKafkaProducerMock(nil, func(ctx context.Context) error {
-			return errors.New("kafkaProducer busted")
-		})
-		cli, _ := NewReporterClient(producer, "serviceName")
-
-		Convey("when close is called", func() {
-			err := cli.Close(ctx)
-
-			Convey("then the expected error is returned", func() {
-				So(err, ShouldResemble, errors.New("kafkaProducer busted"))
-			})
-
-			Convey("and kafkaProducer.Close is called once with the expected parameters", func() {
-				So(len(producer.CloseCalls()), ShouldEqual, 1)
-				So(producer.CloseCalls()[0], ShouldNotBeNil)
-			})
-		})
-	})
-}
-
 func setup(marshalParams *[]interface{}, marshal func(s interface{}) ([]byte, error)) (chan []byte, *clienttest.KafkaProducerMock, marshalFunc) {
 	output := make(chan []byte, 1)
-	producer := clienttest.NewKafkaProducerMock(output, nil)
+	producer := clienttest.NewKafkaProducerMock(output)
 
 	marshalFunc := func(s interface{}) ([]byte, error) {
 		*marshalParams = append(*marshalParams, s)
