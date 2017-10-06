@@ -1,15 +1,17 @@
 package client
 
 import (
-	"github.com/ONSdigital/go-ns/log"
-	"fmt"
-	"github.com/ONSdigital/dp-reporter-client/model"
 	"errors"
+	"fmt"
+
+	"github.com/ONSdigital/dp-reporter-client/model"
 	"github.com/ONSdigital/dp-reporter-client/schema"
+	"github.com/ONSdigital/go-ns/log"
 )
 
 const (
-	instanceEmpty    = "cannot send reportEvent as instanceID is empty"
+	instanceEmpty    = "cannot ReportError, instanceID is a required field but was empty"
+	contextEmpty     = "cannot ReportError, errContext is a required field but was empty"
 	sendingEvent     = "sending reportEvent for application error"
 	failedToMarshal  = "failed to marshal reportEvent to avro"
 	eventMessageFMT  = "%s: %s"
@@ -26,7 +28,7 @@ type KafkaProducer interface {
 
 type marshalFunc func(s interface{}) ([]byte, error)
 
-//ReporterClient a client for sending error reports to the import-reporter
+// ReporterClient a client for sending error reports to the import-reporter
 type ReporterClient struct {
 	kafkaProducer KafkaProducer
 	marshal       marshalFunc
@@ -50,17 +52,21 @@ func NewReporterClient(kafkaProducer KafkaProducer, serviceName string) (*Report
 }
 
 // ReportError send an error report to the import-reporter
-func (c ReporterClient) ReportError(instanceID string, eventContext string, err error, data log.Data) error {
-	log.ErrorC(eventContext, err, data)
-
+func (c ReporterClient) ReportError(instanceID string, errContext string, err error, data log.Data) error {
 	if len(instanceID) == 0 {
 		log.Info(instanceEmpty, nil)
-		return nil
+		return errors.New(instanceEmpty)
 	}
+	if len(errContext) == 0 {
+		log.Info(contextEmpty, nil)
+		return errors.New(contextEmpty)
+	}
+
+	log.ErrorC(errContext, err, data)
 
 	reportEvent := &model.ReportEvent{
 		InstanceID:  instanceID,
-		EventMsg:    eventMsg(eventContext, err),
+		EventMsg:    fmt.Sprintf(eventMessageFMT, errContext, err.Error()),
 		ServiceName: c.serviceName,
 		EventType:   eventTypeErr,
 	}
@@ -76,8 +82,4 @@ func (c ReporterClient) ReportError(instanceID string, eventContext string, err 
 
 	c.kafkaProducer.Output() <- avroBytes
 	return nil
-}
-
-func eventMsg(prefix string, err error) string {
-	return fmt.Sprintf(eventMessageFMT, prefix, err.Error())
 }

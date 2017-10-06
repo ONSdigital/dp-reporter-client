@@ -1,24 +1,28 @@
 package client
 
 import (
-	"testing"
-	. "github.com/smartystreets/goconvey/convey"
 	"errors"
+	"testing"
+
+	"fmt"
+
+	"github.com/ONSdigital/dp-reporter-client/client/clienttest"
 	"github.com/ONSdigital/dp-reporter-client/model"
 	"github.com/ONSdigital/dp-reporter-client/schema"
-	"github.com/ONSdigital/dp-reporter-client/client/clienttest"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 var (
 	testInstanceID = "666"
-	cause          = errors.New("Flubba Wubba Dub Dub")
+	cause          = errors.New("flubba wubba dub dub")
 	errContext     = "Ricky Ticky Tic Tac"
 
 	expectedReportEvent = &model.ReportEvent{
 		InstanceID:  testInstanceID,
 		EventType:   "error",
 		ServiceName: "Bob",
-		EventMsg:    eventMsg(errContext, cause),
+		EventMsg:    fmt.Sprintf(eventMessageFMT, errContext, cause.Error()),
 	}
 )
 
@@ -91,8 +95,32 @@ func TestHandler_HandleInstanceIDEmpty(t *testing.T) {
 		Convey("When ReportError is called with an empty instanceID", func() {
 			err := target.ReportError("", errContext, cause, nil)
 
-			Convey("Then no error is returned", func() {
-				So(err, ShouldBeNil)
+			Convey("Then the expected error is returned", func() {
+				So(err, ShouldResemble, errors.New(instanceEmpty))
+			})
+
+			Convey("And marshal is never called", func() {
+				So(len(marshalParams), ShouldEqual, 0)
+			})
+
+			Convey("And kafkaProducer.Output is never called", func() {
+				So(kafkaProducer.OutputCalls(), ShouldEqual, 0)
+			})
+		})
+	})
+}
+
+func TestHandler_HandleErrContextEmpty(t *testing.T) {
+	Convey("Given ReporterClient has been configured correctly", t, func() {
+		marshalParams := make([]interface{}, 0)
+		_, kafkaProducer, marshalFunc := setup(&marshalParams, schema.ReportEventSchema.Marshal)
+		target := &ReporterClient{kafkaProducer: kafkaProducer, serviceName: "Bob", marshal: marshalFunc}
+
+		Convey("When ReportError is called with an empty errContext", func() {
+			err := target.ReportError(testInstanceID, "", cause, nil)
+
+			Convey("Then the expected error is returned", func() {
+				So(err, ShouldResemble, errors.New(contextEmpty))
 			})
 
 			Convey("And marshal is never called", func() {
@@ -157,7 +185,7 @@ func TestNewReporterClient(t *testing.T) {
 
 func setup(marshalParams *[]interface{}, marshal func(s interface{}) ([]byte, error)) (chan []byte, *clienttest.KafkaProducerMock, marshalFunc) {
 	output := make(chan []byte, 1)
-	producer := clienttest.NewKafkaProducerMock(output, nil)
+	producer := clienttest.NewKafkaProducerMock(output)
 
 	marshalFunc := func(s interface{}) ([]byte, error) {
 		*marshalParams = append(*marshalParams, s)
