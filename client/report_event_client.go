@@ -62,8 +62,6 @@ func (c ReporterClient) ReportError(instanceID string, errContext string, err er
 		return errors.New(contextEmpty)
 	}
 
-	log.ErrorC(errContext, err, data)
-
 	reportEvent := &model.ReportEvent{
 		InstanceID:  instanceID,
 		EventMsg:    fmt.Sprintf(eventMessageFMT, errContext, err.Error()),

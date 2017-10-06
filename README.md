@@ -8,7 +8,7 @@ A client for sending report events to the dp-import-reporter
 To create a new client you need to provide a KafkaProducer [see go-ns kafka.Producer](https://github.com/ONSdigital/go-ns/blob/master/kafka/producer.go) 
 and service name. The producer should already be configured to talk to the desired instance of the reporter and the 
 service name should be the name of your service - as this is where the error event has occurred. __NOTE:__ It is the 
-responsibility of the caller to gracefully close the KafkaProducer and reactor to any error it might return.
+responsibility of the caller to gracefully close the KafkaProducer and handle any error it returns.
 ```go
 	var p KafkaProducer
 	...
