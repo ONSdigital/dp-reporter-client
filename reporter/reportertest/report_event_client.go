@@ -36,8 +36,3 @@ func (m *ImportErrorReporterMock) Notify(id string, errContext string, err error
 func (m *ImportErrorReporterMock) NotifyCalls() []NotfiyParams {
 	return m.params
 }
-
-// NotifyCalls return a slice of the NotfiyParams passed into each invocation of Notify
-func (m *ImportErrorReporterMock) GetNotifyParams(i int) NotfiyParams {
-	return m.params[i]
-}
