@@ -6,7 +6,7 @@ A client for sending report events to the dp-import-reporter
 ### Getting started
 ##### Reporting an import error
 Report an import pipeline error via the `ImportErrorReporter`. To create a new ImportErrorReporter you need to provide a
- KafkaProducer [see go-ns kafka.Producer](https://github.com/ONSdigital/go-ns/blob/master/kafka/producer.go) and service
+ KafkaProducer [see dp-kafka kafka.Producer](https://github.com/ONSdigital/dp-kafka/blob/master/producer.go) and service
   name. The producer should already be configured to talk to the desired instance of the reporter and the service name 
   should be the name of your service - as this is where the error event has occurred. __NOTE:__ It is the responsibility
    of the caller to gracefully close the KafkaProducer and handle any error it returns.
@@ -71,12 +71,18 @@ Testing the above:
 		So(reporterMock.NotifyCalls()[0], ShouldResemble, expectedParams)
 	})
 ```
-The `reporter.ErrorReporter` package also provides a mock of the `KafkaProducer`
+The kafka producer mock `kafka.MessageProducer` from dp-kafka package is used for testing, creating the channels if the test requires it:
 ```
+	pChannels := kafka.CreateProducerChannels()
+	p := kafkatest.NewMessageProducerWithChannels(p)
+
     output := make(chan []byte, 1)
     p := reportertest.NewKafkaProducerMock(output)
+	go func() {
+		...
+	}()
     ...
-    So(len(p.OutputCalls()), ShouldEqual, 1)
+	avroBytes := <-kafkaProducer.Channels().Output
 ```
 ### Contributing
 
