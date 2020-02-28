@@ -30,7 +30,7 @@ var (
 func TestHandler_Handle(t *testing.T) {
 	Convey("Given ImportErrorReporter has been configured correctly", t, func(c C) {
 		marshalParams := make([]interface{}, 0)
-		kafkaProducer, marshalFunc := setup(&marshalParams, schema.ReportEventSchema.Marshal, true)
+		kafkaProducer, marshalFunc, pChannels := setup(&marshalParams, schema.ReportEventSchema.Marshal, true)
 		target := ImportErrorReporter{kafkaProducer: kafkaProducer, serviceName: "Bob", marshal: marshalFunc}
 
 		Convey("When Notify is called with valid parameters, marshall is called as expected and data is sent to output channel exactly once", func(c C) {
@@ -44,8 +44,8 @@ func TestHandler_Handle(t *testing.T) {
 			}()
 
 			// Wait for output chan and close it, so that test fails if data is sent to channel more than once.
-			avroBytes := <-kafkaProducer.Channels().Output
-			close(kafkaProducer.Channels().Output)
+			avroBytes := <-pChannels.Output
+			close(pChannels.Output)
 
 			// Validate marshall
 			So(len(marshalParams), ShouldEqual, 1)
@@ -63,7 +63,7 @@ func TestHandler_HandleMarshalError(t *testing.T) {
 	Convey("Given ImportErrorReporter has been configured correctly", t, func() {
 
 		marshalParams := make([]interface{}, 0)
-		kafkaProducer, marshalFunc := setup(&marshalParams, func(s interface{}) ([]byte, error) {
+		kafkaProducer, marshalFunc, _ := setup(&marshalParams, func(s interface{}) ([]byte, error) {
 			return nil, errors.New("Bork!")
 		}, false)
 		target := &ImportErrorReporter{kafkaProducer: kafkaProducer, serviceName: "Bob", marshal: marshalFunc}
@@ -86,7 +86,7 @@ func TestHandler_HandleMarshalError(t *testing.T) {
 func TestHandler_HandleInstanceIDEmpty(t *testing.T) {
 	Convey("Given ImportErrorReporter has been configured correctly", t, func() {
 		marshalParams := make([]interface{}, 0)
-		kafkaProducer, marshalFunc := setup(&marshalParams, schema.ReportEventSchema.Marshal, false)
+		kafkaProducer, marshalFunc, _ := setup(&marshalParams, schema.ReportEventSchema.Marshal, false)
 		target := &ImportErrorReporter{kafkaProducer: kafkaProducer, serviceName: "Bob", marshal: marshalFunc}
 
 		Convey("When Notify is called with an empty instanceID", func() {
@@ -106,7 +106,7 @@ func TestHandler_HandleInstanceIDEmpty(t *testing.T) {
 func TestHandler_HandleErrContextEmpty(t *testing.T) {
 	Convey("Given ImportErrorReporter has been configured correctly", t, func() {
 		marshalParams := make([]interface{}, 0)
-		kafkaProducer, marshalFunc := setup(&marshalParams, schema.ReportEventSchema.Marshal, false)
+		kafkaProducer, marshalFunc, _ := setup(&marshalParams, schema.ReportEventSchema.Marshal, false)
 		target := &ImportErrorReporter{kafkaProducer: kafkaProducer, serviceName: "Bob", marshal: marshalFunc}
 
 		Convey("When Notify is called with an empty errContext", func() {
@@ -174,7 +174,7 @@ func TestNewReporterClient(t *testing.T) {
 
 // setup creates a testing Kakfa producer and marshal func. If your test doesn't expect to use any kafka channel,
 // please pass createChannels=false, so that the test fails if it does.
-func setup(marshalParams *[]interface{}, marshal func(s interface{}) ([]byte, error), createChannels bool) (*kafkatest.MessageProducer, marshalFunc) {
+func setup(marshalParams *[]interface{}, marshal func(s interface{}) ([]byte, error), createChannels bool) (*kafkatest.MessageProducer, marshalFunc, kafka.ProducerChannels) {
 	pChannels := kafka.ProducerChannels{}
 	if createChannels {
 		pChannels = kafka.CreateProducerChannels()
@@ -185,5 +185,5 @@ func setup(marshalParams *[]interface{}, marshal func(s interface{}) ([]byte, er
 		*marshalParams = append(*marshalParams, s)
 		return marshal(s)
 	}
-	return producer, marshalFunc
+	return producer, marshalFunc, pChannels
 }
