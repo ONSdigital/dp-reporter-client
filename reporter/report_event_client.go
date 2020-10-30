@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	kafka "github.com/ONSdigital/dp-kafka"
+	kafka "github.com/ONSdigital/dp-kafka/v2"
 	"github.com/ONSdigital/dp-reporter-client/model"
 	"github.com/ONSdigital/dp-reporter-client/schema"
 	"github.com/ONSdigital/log.go/log"

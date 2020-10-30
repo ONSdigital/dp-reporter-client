@@ -6,8 +6,8 @@ import (
 
 	"fmt"
 
-	kafka "github.com/ONSdigital/dp-kafka"
-	"github.com/ONSdigital/dp-kafka/kafkatest"
+	kafka "github.com/ONSdigital/dp-kafka/v2"
+	"github.com/ONSdigital/dp-kafka/v2/kafkatest"
 	"github.com/ONSdigital/dp-reporter-client/model"
 	"github.com/ONSdigital/dp-reporter-client/schema"
 
@@ -175,15 +175,15 @@ func TestNewReporterClient(t *testing.T) {
 // setup creates a testing Kakfa producer and marshal func. If your test doesn't expect to use any kafka channel,
 // please pass createChannels=false, so that the test fails if it does.
 func setup(marshalParams *[]interface{}, marshal func(s interface{}) ([]byte, error), createChannels bool) (*kafkatest.MessageProducer, marshalFunc, kafka.ProducerChannels) {
-	pChannels := kafka.ProducerChannels{}
+	pChannels := &kafka.ProducerChannels{}
 	if createChannels {
 		pChannels = kafka.CreateProducerChannels()
 	}
-	producer := kafkatest.NewMessageProducerWithChannels(pChannels)
+	producer := kafkatest.NewMessageProducerWithChannels(pChannels, false)
 
 	marshalFunc := func(s interface{}) ([]byte, error) {
 		*marshalParams = append(*marshalParams, s)
 		return marshal(s)
 	}
-	return producer, marshalFunc, pChannels
+	return producer, marshalFunc, *pChannels
 }
