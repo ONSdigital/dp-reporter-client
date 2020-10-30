@@ -1,6 +1,6 @@
 module github.com/ONSdigital/dp-reporter-client
 
-go 1.13
+go 1.15
 
 require (
 	github.com/ONSdigital/dp-kafka/v2 v2.0.2
