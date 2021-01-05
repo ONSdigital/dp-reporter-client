@@ -1,0 +1,19 @@
+---
+
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: golang
+    tag: 1.13.8
+
+inputs:
+  - name: dp-reporter-client
+    path: dp-reporter-client
+
+# outputs:
+#   - name: build
+
+run:
+  path: dp-reporter-client/ci/scripts/build.sh
