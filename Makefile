@@ -4,7 +4,7 @@ BUILD=build
 BUILD_ARCH=$(BUILD)/$(GOOS)-$(GOARCH)
 BIN_DIR?=.
 
-PHONY: all
+.PHONY: all
 all: audit test build
 
 PHONY: audit
