@@ -12,4 +12,4 @@ inputs:
     path: dp-reporter-client
 
 run:
-  path: reporter-client/ci/scripts/audit.sh
+  path: dp-reporter-client/ci/scripts/audit.sh

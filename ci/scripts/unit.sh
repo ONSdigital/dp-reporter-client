@@ -2,6 +2,6 @@
 
 cwd=$(pwd)
 
-pushd $cwd/dp-search-builder
+pushd $cwd/dp-reporter-client
   make test
 popd
