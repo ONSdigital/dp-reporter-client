@@ -12,3 +12,7 @@ build:
 .PHONY: test
 test:
 	go test -race -cover ./...
+
+.PHONY: lint
+lint:
+	go fmt ./...

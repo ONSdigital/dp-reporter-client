@@ -1,13 +1,14 @@
 package reporter
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	kafka "github.com/ONSdigital/dp-kafka/v2"
 	"github.com/ONSdigital/dp-reporter-client/model"
 	"github.com/ONSdigital/dp-reporter-client/schema"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 const (
@@ -62,13 +63,18 @@ func NewImportErrorReporter(kafkaProducer KafkaProducer, serviceName string) (Im
 // ID and errContent are required parameters. If neither is provided or there is any error while attempting to
 // report the event then an error is returned which the caller can handle as they see fit.
 func (c ImportErrorReporter) Notify(id string, errContext string, err error) error {
+
+	ctx := context.Background()
+
 	if len(id) == 0 {
-		log.Event(nil, idEmpty)
-		return errors.New(idEmpty)
+		err := errors.New(idEmpty)
+		log.Error(ctx, idEmpty, err)
+		return err
 	}
 	if len(errContext) == 0 {
-		log.Event(nil, contextEmpty)
-		return errors.New(contextEmpty)
+		err := errors.New(contextEmpty)
+		log.Error(ctx, contextEmpty, err)
+		return err
 	}
 
 	reportEvent := &model.ReportEvent{
@@ -79,14 +85,14 @@ func (c ImportErrorReporter) Notify(id string, errContext string, err error) err
 	}
 
 	reportEventData := log.Data{reportEventKey: reportEvent}
-	log.Event(nil, sendingEvent, reportEventData)
+	log.Info(ctx, sendingEvent, reportEventData)
 
 	avroBytes, err := c.marshal(reportEvent)
 	if err != nil {
-		log.Event(nil, failedToMarshal, log.Error(err), reportEventData)
+		log.Error(ctx, failedToMarshal, err, reportEventData)
 		return err
 	}
-	fmt.Printf("Sending bytes to output channel")
+	log.Info(ctx, "Sending bytes to output channel")
 
 	c.kafkaProducer.Channels().Output <- avroBytes
 	return nil
