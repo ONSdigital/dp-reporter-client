@@ -35,17 +35,31 @@ func TestHandler_Handle(t *testing.T) {
 
 		Convey("When Notify is called with valid parameters, marshall is called as expected and data is sent to output channel exactly once", func(c C) {
 
+			// Notify sends on a synchronous channel before returning.
+			// There is no guarantee that a receive on that channel happens before
+			// Notify returns, so checking the return value must be done
+			// when we know positively that Notify has returned.
+			// So we use the asynchronous done channel to tell us that Notify
+			// has really returned before we check its return value.
+			// (Thanks to the linux/amd64 compiler's race detector here.
+			// The darwin and freebsd compilers were no help at all.)
+			//
+			done := make(chan struct{}, 1)
+			var err error
+
 			// Call notify in a separate go routine
 			go func() {
-				err := target.Notify(testInstanceID, errContext, cause)
-				c.Convey("Then no error is returned", func() {
-					So(err, ShouldBeNil)
-				})
+				err = target.Notify(testInstanceID, errContext, cause)
+				done <- struct{}{}
 			}()
 
 			// Wait for output chan and close it, so that test fails if data is sent to channel more than once.
 			avroBytes := <-pChannels.Output
 			close(pChannels.Output)
+
+			// Wait to know that Notify has returned before we look at err
+			<-done
+			So(err, ShouldBeNil)
 
 			// Validate marshall
 			So(len(marshalParams), ShouldEqual, 1)
