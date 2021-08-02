@@ -107,7 +107,7 @@ func TestHandler_HandleInstanceIDEmpty(t *testing.T) {
 			err := target.Notify("", errContext, cause)
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, errors.New(idEmpty))
+				So(err, ShouldResemble, errIdEmpty)
 			})
 
 			Convey("And marshal is never called", func() {
@@ -127,7 +127,7 @@ func TestHandler_HandleErrContextEmpty(t *testing.T) {
 			err := target.Notify(testInstanceID, "", cause)
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, errors.New(contextEmpty))
+				So(err, ShouldResemble, errContextEmpty)
 			})
 
 			Convey("And marshal is never called", func() {

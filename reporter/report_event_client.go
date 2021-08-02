@@ -11,9 +11,12 @@ import (
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
+var (
+	errIdEmpty      = errors.New("cannot Notify, ID is a required field but was empty")
+	errContextEmpty = errors.New("cannot Notify, errContext is a required field but was empty")
+)
+
 const (
-	idEmpty          = "cannot Notify, ID is a required field but was empty"
-	contextEmpty     = "cannot Notify, errContext is a required field but was empty"
 	sendingEvent     = "sending reportEvent for application error"
 	failedToMarshal  = "failed to marshal reportEvent to avro"
 	eventMessageFMT  = "%s: %s"
@@ -63,18 +66,13 @@ func NewImportErrorReporter(kafkaProducer KafkaProducer, serviceName string) (Im
 // ID and errContent are required parameters. If neither is provided or there is any error while attempting to
 // report the event then an error is returned which the caller can handle as they see fit.
 func (c ImportErrorReporter) Notify(id string, errContext string, err error) error {
-
 	ctx := context.Background()
 
 	if len(id) == 0 {
-		err := errors.New(idEmpty)
-		log.Error(ctx, idEmpty, err)
-		return err
+		return errIdEmpty
 	}
 	if len(errContext) == 0 {
-		err := errors.New(contextEmpty)
-		log.Error(ctx, contextEmpty, err)
-		return err
+		return errContextEmpty
 	}
 
 	reportEvent := &model.ReportEvent{
